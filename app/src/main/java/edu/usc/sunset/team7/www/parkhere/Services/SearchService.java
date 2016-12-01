@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import edu.usc.sunset.team7.www.parkhere.Utils.Consts;
 import edu.usc.sunset.team7.www.parkhere.objectmodule.SearchResult;
@@ -45,13 +46,16 @@ public class SearchService extends IntentService {
         HttpLoggingInterceptor httpLogger = new HttpLoggingInterceptor(new HttpLoggingInterceptor.Logger() {
             @Override
             public void log(String message) {
-                Log.i("interceptor:", message);
+                Log.i("SearchService intercept", message);
             }
         });
 
         httpLogger.setLevel(HttpLoggingInterceptor.Level.BASIC);
 
         clientBuilder.addInterceptor(httpLogger);
+
+        clientBuilder.connectTimeout(10, TimeUnit.SECONDS);
+        clientBuilder.readTimeout(10, TimeUnit.SECONDS);
 
         OkHttpClient okClient = clientBuilder.build();
 

@@ -16,10 +16,10 @@ public class Tools {
     private static final String EMAIL_REGEX = "^.+\\@.+\\..+$";
     private static final String NAME_REGEX = "^[a-zA-Z ,.'-]+$";
     private static final String PHONE_REGEX = "^[0-9]{10}$";
-    private static final String PASSWORD_REGEX = "^(?=.{10,})(?=.*[@#$%^&+=?]).*$";
+    private static final String PASSWORD_REGEX = "^(?=.{10,})(?=.*[@#$%^&+=!?]).*$";
     // very basic email regex checker, main validation is done through email confirmation link
     public static boolean emailValid(String email) {
-        return email.matches(EMAIL_REGEX);
+        return email != null && email.matches(EMAIL_REGEX);
     }
 
     // returns true if name is valid (alpha characters and ' - . , and spaces only allowed)
@@ -39,7 +39,7 @@ public class Tools {
     }
 
     public static boolean passwordValid(String password) {
-        return password.matches(PASSWORD_REGEX);
+        return password != null && password.matches(PASSWORD_REGEX);
     }
 
     public static String getDateString(DateTime dateTime) {
@@ -55,6 +55,16 @@ public class Tools {
     public static String getDateString(int year, int month, int day, int hour, int minute) {
 
         return month + "/" + day + "/" + year + " " + hour + ":" + minute;
+    }
+
+    public static String arrayToString(int[] mArray) {
+        StringBuilder sBuilder = new StringBuilder();
+        for (int i  = 0; i < mArray.length - 1; i++) {
+            sBuilder.append(mArray[i]);
+            sBuilder.append(",");
+        }
+        sBuilder.append(mArray[mArray.length - 1]);
+        return sBuilder.toString();
     }
 
 }

@@ -10,6 +10,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -19,6 +20,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -46,8 +50,8 @@ public class BookingDetailsActivity extends AppCompatActivity {
     private static final String TAG = "BookingDetailsActivity";
     private Booking booking;
     private Listing listing;
-    private String providerFirstName;
-    private String seekerFirstName;
+    private String providerFullName;
+    private String providerEmail;
     private String providerPhoneNumber;
 
     @Override
@@ -58,7 +62,7 @@ public class BookingDetailsActivity extends AppCompatActivity {
 
         setSupportActionBar(bookingDetailsToolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Booking details");
+            getSupportActionBar().setTitle("Booking Details");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
@@ -79,8 +83,9 @@ public class BookingDetailsActivity extends AppCompatActivity {
     }
 
     private void getFirebaseData() {
-        providerFirstName = null;
+        providerFullName = null;
         providerPhoneNumber = null;
+        providerEmail = null;
 
         //getting first name of provider
         DatabaseReference dbRef = FirebaseDatabase.getInstance().getReference(Consts.USERS_DATABASE)
@@ -99,17 +104,17 @@ public class BookingDetailsActivity extends AppCompatActivity {
     }
 
     private void getFirstNameAndPhoneNumber(DataSnapshot userData) {
-        providerFirstName = userData.child(Consts.USER_FIRSTNAME).getValue().toString();
+        providerFullName = userData.child(Consts.USER_FIRSTNAME).getValue().toString();
+        providerFullName += " " + userData.child(Consts.USER_LASTNAME).getValue().toString();
         providerPhoneNumber = userData.child(Consts.USER_PHONENUMBER).getValue().toString();
+        providerEmail = userData.child(Consts.USER_EMAIL).getValue().toString();
+
         displayBooking();
     }
 
     private void displayBooking() {
-        if(!listing.isRefundable()){
-            cancelBookingButton.setEnabled(false);
-        }
         bookingName.setText(listing.getName());
-        providerName.setText(providerFirstName);
+        providerName.setText(providerFullName);
         Picasso.with(this).load(listing.getImageURL()).into(parkingImage);
         bookingDetails.setText(bookingDetailsString());
     }
@@ -118,10 +123,11 @@ public class BookingDetailsActivity extends AppCompatActivity {
         StringBuilder descriptionBuilder = new StringBuilder();
         descriptionBuilder.append("Name of Listing: " + listing.getName());
         descriptionBuilder.append("\nListing Description: "  + listing.getDescription());
-        descriptionBuilder.append("\nStart Time: " + Tools.convertUnixTimeToDateString(listing.getStartTime()));
-        descriptionBuilder.append("\nEnd Time: " + Tools.convertUnixTimeToDateString(listing.getStopTime()));
-        descriptionBuilder.append("\nListing provider: " + providerFirstName);
+        descriptionBuilder.append("\nStart Time: " + Tools.convertUnixTimeToDateString(booking.getBookStartTime()));
+        descriptionBuilder.append("\nEnd Time: " + Tools.convertUnixTimeToDateString(booking.getBookEndTime()));
+        descriptionBuilder.append("\nListing provider: " + providerFullName);
         descriptionBuilder.append("\nProvider phone number: " + providerPhoneNumber);
+        descriptionBuilder.append("\nProvider email: " + providerEmail);
 
         descriptionBuilder.append("\n\nParking Information");
         descriptionBuilder.append("\nLocation: (" + listing.getLatitude() + "," + listing.getLongitude() + ")");
@@ -155,41 +161,84 @@ public class BookingDetailsActivity extends AppCompatActivity {
 
     @OnClick(R.id.cancel_booking_button)
     protected void cancelBooking() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child(Consts.BOOKINGS_DATABASE).child(currentUser.getUid());
-        ref.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for(DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    if(snapshot.getKey().toString().equals(booking.getBookingID())) {
-                        String startTime = snapshot.child(Consts.BOOKING_START_TIME).getValue().toString();
-                        String providerID = snapshot.child(Consts.BOOKING_PROVIDER_ID).getValue().toString();
-                        String listingID = snapshot.child(Consts.BOOKING_LISTING_ID).getValue().toString();
-                        long longStartTime = Long.parseLong(startTime);
-                        long unixTime = System.currentTimeMillis() / 1000L;
-                        if(unixTime < longStartTime) {
-                            removeListing(listingID, providerID, booking.getBookingID());
-                        } else {
-                            AlertDialog.Builder adb=new AlertDialog.Builder(BookingDetailsActivity.this);
-                            adb.setTitle("This booking cannot be cancelled because the transaction has been completed");
-                            adb.setPositiveButton("OK", null);
-                            adb.show();
+        if(listing.isRefundable()){
+            FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+            DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child(Consts.BOOKINGS_DATABASE).child(currentUser.getUid());
+            ref.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    for(DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        if(snapshot.getKey().toString().equals(booking.getBookingID())) {
+                            String startTime = snapshot.child(Consts.BOOKING_START_TIME).getValue().toString();
+                            String providerID = snapshot.child(Consts.BOOKING_PROVIDER_ID).getValue().toString();
+                            final String listingID = snapshot.child(Consts.BOOKING_LISTING_ID).getValue().toString();
+
+                            long longStartTime = Long.parseLong(startTime);
+                            long unixTime = System.currentTimeMillis() / 1000L;
+                            if(unixTime < longStartTime) {
+                                removeListing(listingID, providerID, booking.getBookingID());
+
+                                //add increment back to listing after cancel
+                                final DatabaseReference listingRef = FirebaseDatabase.getInstance().getReference()
+                                        .child(Consts.LISTINGS_DATABASE)
+                                        .child(providerID)
+                                        .child(Consts.ACTIVE_LISTINGS)
+                                        .child(listingID);
+                                listingRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(DataSnapshot dataSnapshot) {
+                                        String bookingTimes = dataSnapshot
+                                                .child(Consts.LISTING_ACTIVE_TIMES)
+                                                .getValue().toString();
+                                        String[] timeAvailability = bookingTimes.split(",");
+                                        ArrayList<Integer> timesAvailable = new ArrayList<>();
+                                        for (int i = 0; i < timeAvailability.length; i++) {
+                                            int currTime = Integer.parseInt(timeAvailability[i]);
+                                            timesAvailable.add(currTime);
+                                        }
+                                        int toAdd = booking.getTimeIncrement();
+                                        timesAvailable.add(toAdd);
+                                        Collections.sort(timesAvailable);
+                                        StringBuilder sb = new StringBuilder();
+                                        sb.append(timesAvailable.get(0));
+                                        for (int i = 1; i < timesAvailable.size(); i++) {
+                                            sb.append(",");
+                                            sb.append(timesAvailable.get(i));
+                                        }
+                                        String timeAvailabilityString = sb.toString();
+                                        listingRef.child(Consts.LISTING_ACTIVE_TIMES)
+                                                .setValue(timeAvailabilityString);
+                                        listingRef.child(Consts.LISTING_CURRENT_ACTIVE)
+                                                .setValue(true);
+                                    }
+
+                                    @Override
+                                    public void onCancelled(DatabaseError databaseError) {
+
+                                    }
+                                });
+                                HomeActivity.startActivityPostBooking(BookingDetailsActivity.this);
+                                finish();
+                            } else {
+                                Toast.makeText
+                                        (BookingDetailsActivity.this,
+                                        "This booking cannot be cancelled because the transaction has been already been started",
+                                        Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
                 }
-                HomeActivity.startActivityPostBooking(BookingDetailsActivity.this);
-                finish();
-            }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {}
-        });
-
-       // DatabaseReference providerListingRef = FirebaseDatabase.getInstance().getReference().child(Consts.LISTINGS_DATABASE).
+                @Override
+                public void onCancelled(DatabaseError databaseError) {}
+            });
+        } else {
+            Toast.makeText(BookingDetailsActivity.this, "Your booking is non-refundable.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     protected void removeListing(final String listingID, final String providerID, final String bookingID){
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child(Consts.LISTINGS_DATABASE).child(providerID).child(Consts.INACTIVE_LISTINGS).child(listingID);
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference().child(Consts.LISTINGS_DATABASE).child(providerID).child(Consts.INACTIVE_LISTINGS).child(bookingID);
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -202,26 +251,8 @@ public class BookingDetailsActivity extends AppCompatActivity {
                     for(DataSnapshot child : dataSnapshot.getChildren()){
                         //add back to active listing
                         switch (child.getKey()) {
-                            case "Compact":
-                                addToActive.child(Consts.LISTING_COMPACT).setValue(child.getValue());
-                                break;
-                            case "Covered":
-                                addToActive.child(Consts.LISTING_COVERED).setValue(child.getValue());
-                                break;
                             case "Listing Description":
                                 addToActive.child(Consts.LISTING_DESCRIPTION).setValue(child.getValue());
-                                break;
-                            case "Handicap":
-                                addToActive.child(Consts.LISTING_HANDICAP).setValue(child.getValue());
-                                break;
-                            case "Image URL":
-                                addToActive.child(Consts.LISTING_IMAGE).setValue(child.getValue());
-                                break;
-                            case "Latitude":
-                                addToActive.child(Consts.LISTING_LATITUDE).setValue(child.getValue());
-                                break;
-                            case "Longitude":
-                                addToActive.child(Consts.LISTING_LONGITUDE).setValue(child.getValue());
                                 break;
                             case "Listing Name":
                                 addToActive.child(Consts.LISTING_NAME).setValue(child.getValue());
@@ -238,12 +269,18 @@ public class BookingDetailsActivity extends AppCompatActivity {
                             case "Price":
                                 addToActive.child(Consts.LISTING_PRICE).setValue(child.getValue());
                                 break;
+                            case "Increment":
+                                addToActive.child("Increment").setValue(child.getValue());
+                                break;
+                            case "Times Available":
+                                addToActive.child("Times Available").setValue(child.getValue());
+                                break;
                         }
                     }
 
                 }
                 //remove from inactive listing
-                FirebaseDatabase.getInstance().getReference().child(Consts.LISTINGS_DATABASE).child(providerID).child(Consts.INACTIVE_LISTINGS).child(listingID).removeValue();
+                FirebaseDatabase.getInstance().getReference().child(Consts.LISTINGS_DATABASE).child(providerID).child(Consts.INACTIVE_LISTINGS).child(bookingID).removeValue();
                 FirebaseDatabase.getInstance().getReference().child(Consts.BOOKINGS_DATABASE).child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child(bookingID).removeValue();
             }
 

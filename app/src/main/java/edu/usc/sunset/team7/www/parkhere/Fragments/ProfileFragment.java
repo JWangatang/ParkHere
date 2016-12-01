@@ -1,14 +1,13 @@
 package edu.usc.sunset.team7.www.parkhere.Fragments;
 
+import android.app.Fragment;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.support.annotation.NonNull;
-import android.support.v7.widget.ListViewCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -60,7 +59,7 @@ public class ProfileFragment extends Fragment{
     private double rating = -1;
     private ArrayList<Review> reviews = new ArrayList<Review>();
 
-    private static final String TAG = "UserProfileFragment***";
+    private static final String TAG = "ProfileFragment*****";
 
 
     @Override
@@ -128,51 +127,48 @@ public class ProfileFragment extends Fragment{
         });
 
 
-        DatabaseReference reviewsRef = FirebaseDatabase.getInstance().getReference(Consts.REVIEWS_DATABASE);
-        reviewsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if(dataSnapshot.hasChild(uid)){
+        //Get Reviews
+        //ReviewsDB -> UID -> ParkingSpotID -> Booking ID -> Review Data
+        DatabaseReference reviewsRef = FirebaseDatabase.getInstance().getReference(Consts.REVIEWS_DATABASE).child(uid);
+        if(reviewsRef!=null){ //User has reviews
+            reviewsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
 
-                    if(dataSnapshot.child(uid).hasChildren()){
-                        int ratings = -1;
-                        int counter = 0;
-                        String description = null;
-                        for(DataSnapshot child : dataSnapshot.child(uid).getChildren()){
-                            for (DataSnapshot child2 : child.getChildren()){
-                                switch (child2.getKey()) {
-                                    case Consts.REVIEW_DESCRIPTION:
-                                        description = child2.getValue().toString();
-                                        break;
-                                    case Consts.REVIEW_RATING:
-                                        ratings = Integer.parseInt(child2.getValue().toString());
-                                        rating += (double)ratings;
-                                        counter++;
-                                        break;
+                    if(dataSnapshot.hasChildren()){
+                        //Getting all Parking Spot IDs
+                        for(DataSnapshot parkingSpotID : dataSnapshot.getChildren()){
+                            //Getting the Booking ID
+                            for(DataSnapshot bookingID : parkingSpotID.getChildren()){
+                                int ratings = -1;
+                                String description = null;
+                                //Get the review data
+                                for(DataSnapshot review : bookingID.getChildren()){
+                                    switch (review.getKey()) {
+                                        case Consts.REVIEW_DESCRIPTION:
+                                            description = review.getValue().toString();
+                                            Log.d(TAG, description);
+                                            break;
+                                        case Consts.REVIEW_RATING:
+                                            ratings = Integer.parseInt(review.getValue().toString());
+                                            break;
+                                    }
+                                }
+                                if(ratings !=-1 && description!=null){
+                                    Review r = new Review(ratings, description);
+                                    reviews.add(r);
+                                } else {
+                                    Log.d(TAG, "RATING WAS NOT ADDED");
                                 }
                             }
-                            Log.d(TAG, "Description: " + description);
-                            Log.d(TAG, "a Rating value: " + Integer.toString(ratings));
-                            if(ratings !=-1 && description != null){
-                                Log.d(TAG, "Created review");
-                                Review r = new Review(ratings, description);
-                                reviews.add(r);
-
-                            }
                         }
-                        rating = rating/(double) counter;
-                        Log.d(TAG, Double.toString(rating));
-                        Log.d(TAG, "Reviews Size: " + Integer.toString(reviews.size()));
                     }
+                    setValues();
                 }
-                setValues();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {}
-        });
-
-
+                @Override
+                public void onCancelled(DatabaseError databaseError) {}
+            });
+        }
     }
 
     private void setValues(){
@@ -190,11 +186,17 @@ public class ProfileFragment extends Fragment{
             drawable.setColorFilter(Color.parseColor("#FFCC00"), PorterDuff.Mode.SRC_ATOP);
             userRating.setRating(Float.valueOf(oneDigit.format(rating)));
 
-            if (reviews != null || reviews.size() > 0) {
+            if (reviews.size() > 0) {
                 reviewContentSpace.removeAllViewsInLayout();
                 ListView listView = new ListView(getActivity());
                 listView.setAdapter(new CustomReviewAdapter(getActivity(), reviews));
                 reviewContentSpace.addView(listView);
+
+                int reviewSum = 0;
+                for(Review r : reviews) {
+                    reviewSum += r.getReviewRating();
+                }
+                userRating.setRating(Float.valueOf(oneDigit.format(reviewSum/reviews.size())));
             }
         } else{
             Log.d(TAG, "MISSING VALUES FOR USER PROFILE = NULL");

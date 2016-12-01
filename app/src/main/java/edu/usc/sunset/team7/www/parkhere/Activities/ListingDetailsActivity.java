@@ -23,6 +23,9 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -38,13 +41,21 @@ import edu.usc.sunset.team7.www.parkhere.objectmodule.ResultsPair;
 public class ListingDetailsActivity extends AppCompatActivity {
 
     @BindView(R.id.listing_name) TextView listingNameTextView;
-    @BindView(R.id.listing_details) TextView listingDetailsTextView;
+    @BindView(R.id.listing_details_description) TextView listingDetailsDescriptionTextView;
+    @BindView(R.id.listing_details_start_time) TextView listingDetailsStartTimeTextView;
+    @BindView(R.id.listing_details_end_time) TextView listingDetailsStopTimeTextView;
+    @BindView(R.id.listing_details_distance_away) TextView listingDetailsDistanceTextView;
+    @BindView(R.id.listing_details_price) TextView listingDetailsPriceTextView;
+    @BindView(R.id.listing_details_refundable) TextView listingDetailsRefundableTextView;
+    @BindView(R.id.listing_details_handicap) TextView listingDetailsHandicapTextView;
+    @BindView(R.id.listing_details_covered) TextView listingDetailsCoveredTextView;
+    @BindView(R.id.listing_details_compact) TextView listingDetailsCompactTextView;
     @BindView(R.id.provider_name) TextView providerNameTextView;
     @BindView(R.id.parking_image) ImageView parkingImageView;
     @BindView(R.id.book_listing_button) Button bookListingButton;
     @BindView(R.id.listing_details_toolbar) Toolbar postListingToolbar;
     @BindView(R.id.edit_listing_button) AppCompatButton editListingButton;
-    @BindView(R.id.delete_listing_button) AppCompatButton deleteListingButton;
+    @BindView(R.id.delete_listing_button) public AppCompatButton deleteListingButton;
 
     private ResultsPair listingResultPair;
     private Listing listingResult;
@@ -52,6 +63,7 @@ public class ListingDetailsActivity extends AppCompatActivity {
     private String providerID;
     private static final String TAG = "ListingDetailsActivity";
     private boolean myOwnListing;
+    private long bookStart, bookStop;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,8 +83,8 @@ public class ListingDetailsActivity extends AppCompatActivity {
         displayView();
     }
 
-    private void getData(){
-        if(!getIntent().hasExtra(Consts.LISTING_RESULT_EXTRA)){
+    private void getData() {
+        if (!getIntent().hasExtra(Consts.LISTING_RESULT_EXTRA)) {
             listingResult = (Listing) getIntent().getSerializableExtra(Consts.LISTING_EXTRA);
         } else {
             listingResultPair = (ResultsPair) getIntent().getSerializableExtra(Consts.LISTING_RESULT_EXTRA);
@@ -80,8 +92,9 @@ public class ListingDetailsActivity extends AppCompatActivity {
         }
 
         providerID = listingResult.getProviderID();
-
         myOwnListing = providerID.equals(FirebaseAuth.getInstance().getCurrentUser().getUid());
+
+        if (!myOwnListing) {
 
             DatabaseReference providerNameRef = FirebaseDatabase.getInstance().getReference().child(Consts.USERS_DATABASE)
                     .child(providerID);
@@ -93,12 +106,14 @@ public class ListingDetailsActivity extends AppCompatActivity {
                     providerFirstName = dataSnapshot.child(Consts.USER_FIRSTNAME).getValue().toString();
                     providerNameTextView.setText("Owner: " + providerFirstName);
                 }
+
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
                     Log.w(TAG, "loadProviderName:onCancelled", databaseError.toException());
                 }
             });
         }
+    }
 
 
     private void displayView(){
@@ -130,16 +145,34 @@ public class ListingDetailsActivity extends AppCompatActivity {
 
         listingNameTextView.setText(listingResult.getName());
         Picasso.with(this).load(listingResult.getImageURL()).into(parkingImageView);
-        listingDetailsTextView.setText(listingDetailsString());
+        listingDetailsDescriptionTextView.setText("Listing Description: " + listingResult.getDescription());
+        listingDetailsStartTimeTextView.setText("Start Time: " + Tools.convertUnixTimeToDateString(listingResult.getStartTime()));
+        listingDetailsStopTimeTextView.setText("End Time: " + Tools.convertUnixTimeToDateString(listingResult.getStopTime()));
+
+        if (!myOwnListing) {
+            listingDetailsDistanceTextView.setText("Distance Away: " + listingResultPair.getDistance() + " miles");
+        }
+        else {
+            listingDetailsDistanceTextView.setVisibility(View.GONE);
+        }
+        listingDetailsPriceTextView.setText("Price: $" + listingResult.getPrice());
+        listingDetailsRefundableTextView.setText("Refundable? " +listingResult.isRefundable());
+        listingDetailsHandicapTextView.setText("Handicap? " + listingResult.isHandicap());
+        listingDetailsCoveredTextView.setText("Covered? " + listingResult.isCovered());
+        listingDetailsCompactTextView.setText("Compact? " + listingResult.isCompact());
     }
 
+
+    //name, listing description, start time, end time, distance away, price, refundable handicap covered compact
     private String listingDetailsString() {
         Listing listing = listingResult;
         StringBuilder descriptionBuilder = new StringBuilder();
         descriptionBuilder.append("Name of Listing: " + listing.getName());
         descriptionBuilder.append("\nListing Description: "  + listing.getDescription());
-        descriptionBuilder.append("\nStart Time: " + Tools.convertUnixTimeToDateString(listing.getStartTime()));
-        descriptionBuilder.append("\nEnd Time: " + Tools.convertUnixTimeToDateString(listing.getStopTime()));
+//        descriptionBuilder.append("\nStart Time: " + Tools.convertUnixTimeToDateString(listing.getStartTime()));
+//        descriptionBuilder.append("\nEnd Time: " + Tools.convertUnixTimeToDateString(listing.getStopTime()));
+        descriptionBuilder.append("\nStart Time: " + Tools.convertUnixTimeToDateString(bookStart));
+        descriptionBuilder.append("\nEnd Time: " + Tools.convertUnixTimeToDateString(bookStop));
         if (!myOwnListing) {
             descriptionBuilder.append("\nDistance Away: " + listingResultPair.getDistance() + " miles");
         }
@@ -161,13 +194,49 @@ public class ListingDetailsActivity extends AppCompatActivity {
 
     @OnClick(R.id.book_listing_button)
     protected void bookListing() {
-        Intent intent = new Intent(ListingDetailsActivity.this, TransactionActivity.class);
-        Bundle bundle = new Bundle();
-        bundle.putSerializable(Consts.LISTING_TO_BE_BOOKED, listingResultPair.getListing());
-        bundle.putDouble(Consts.LISTING_DISTANCE, listingResultPair.getDistance());
-        bundle.putString(Consts.LISTING_DETAILS_STRING, listingDetailsString());
-        intent.putExtras(bundle);
-        startActivity(intent);
+        final ArrayList<Integer> timeIncrements = listingResultPair.getListing().getTimesAvailable();
+        final long startTime = listingResultPair.getListing().getStartTime();
+        final long timeIncr = listingResultPair.getListing().getIncrement();
+        Log.i("TESTING******", "TIME INCREMENT: " + timeIncr);
+        List<String> timeStrings = new ArrayList<>();
+        for (int i = 0; i < timeIncrements.size(); i++) {
+            long startTimeLong = startTime + (timeIncrements.get(i) * timeIncr * 60 * 60);
+            String timeStart = Tools.convertUnixTimeToDateString(startTimeLong);
+            String timeStop = Tools.convertUnixTimeToDateString(startTimeLong + (timeIncr * 60 * 60));
+            Log.i("TESTING*****", "TIMESTART: " + timeStart);
+            Log.i("TESTING*****", "TIMESTOP: " + timeStop);
+            timeStrings.add(timeStart + " - " + timeStop);
+        }
+
+        CharSequence times[] = timeStrings.toArray(new CharSequence[timeStrings.size()]);
+
+//        CharSequence times[] = new CharSequence[]{"1", "2", "3"};
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Pick a time");
+        builder.setItems(times, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int sel) {
+                int selected = timeIncrements.get(sel);
+                bookStart = startTime + (selected * timeIncr * 60 * 60);
+                bookStop = bookStart + (timeIncr * 60 * 60);
+
+                Listing bookListing = listingResultPair.getListing();
+                bookListing.setStartTime(bookStart);
+                bookListing.setStopTime(bookStop);
+
+                Intent intent = new Intent(ListingDetailsActivity.this, TransactionActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable(Consts.LISTING_TO_BE_BOOKED, listingResultPair.getListing());
+                bundle.putDouble(Consts.LISTING_DISTANCE, listingResultPair.getDistance());
+                bundle.putString(Consts.LISTING_DETAILS_STRING, listingDetailsString());
+                bundle.putInt(Consts.LISTING_BOOK_TIME, selected);
+                intent.putExtras(bundle);
+                startActivity(intent);
+
+            }
+        });
+        builder.show();
+
     }
 
     @OnClick(R.id.edit_listing_button)
@@ -205,13 +274,18 @@ public class ListingDetailsActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void deleteListing() {
+    public void deleteListing() {
         FirebaseDatabase.getInstance().getReference(Consts.LISTINGS_DATABASE).child(providerID)
                 .child(Consts.ACTIVE_LISTINGS).child(listingResult.getListingID()).setValue(null);
         System.out.println(providerID+"/"+Consts.ACTIVE_LISTINGS+"/"+listingResult.getListingID());
-        Toast.makeText(this,
-                "Listing deleted.",
-                Toast.LENGTH_SHORT).show();
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(ListingDetailsActivity.this,
+                        "Listing deleted.",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
         finish();
     }
 }

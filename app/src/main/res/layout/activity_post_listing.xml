@@ -18,34 +18,13 @@
             android:layout_height="match_parent"
             tools:ignore="ScrollViewSize">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/search_by_address"
-                android:layout_marginTop="15dp"
-                android:textColor="@color/blueClick"
-                />
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="96dp"
-                android:id="@+id/post_listing_autocomplete_layout">
-
-                <fragment
-                    android:id="@+id/post_listing_autocomplete_fragment"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
-                    android:focusable="true" />
-            </FrameLayout>
-
             <android.support.design.widget.TextInputLayout
                 android:id="@+id/name_textinputlayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp">
+
                 <android.support.v7.widget.AppCompatEditText
                     android:id="@+id/name_edittext"
                     android:layout_width="match_parent"
@@ -56,7 +35,7 @@
             <android.support.design.widget.TextInputLayout
                 android:id="@+id/description_textinputlayout"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
+                android:layout_height="wrap_content"
                 android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp">
                 <android.support.v7.widget.AppCompatEditText
@@ -66,6 +45,22 @@
                     android:hint="@string/listing_description"
                     android:inputType="textMultiLine"/>
             </android.support.design.widget.TextInputLayout>
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/parkingspot_textinputlayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp">
+                <android.support.v7.widget.AppCompatEditText
+                    android:id="@+id/parkingspot_edittext"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/select_parking_spot"
+                    android:focusable="false"
+                    android:longClickable="false"/>
+            </android.support.design.widget.TextInputLayout>
+
 
             <TextView
                 android:text="@string/dates_available"
@@ -99,22 +94,41 @@
 
                 </android.support.design.widget.TextInputLayout>
 
-                <android.support.design.widget.TextInputLayout
-                    android:id="@+id/stop_date_inputlayout"
-                    android:layout_weight="1"
-                    android:layout_width="0dp"
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp">
+
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:hint="@string/stop_date">
+                    android:text="@string/increment_hour_explanation"/>
 
+                <Spinner
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:hint="@string/time_increment"
+                    android:id="@+id/time_increments_spinner">
+                </Spinner>
+
+                <android.support.design.widget.TextInputLayout
+                    android:id="@+id/num_increments_textinputlayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/num_increments"
+                    >
                     <android.support.v7.widget.AppCompatEditText
-                        android:id="@+id/stop_time_edittext"
+                        android:id="@+id/num_increments_edittext"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:focusable="false"
-                        android:longClickable="false"/>
-
+                        android:layout_height="wrap_content"
+                        android:ems="10"
+                        android:inputType="number"/>
                 </android.support.design.widget.TextInputLayout>
+
 
             </LinearLayout>
 
@@ -153,8 +167,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/refundable_rButton"
-                    android:text="@string/refundable_policy"
-                    />
+                    android:text="@string/refundable_policy" />
 
                 <RadioButton
                     android:layout_width="wrap_content"
@@ -164,83 +177,8 @@
 
             </RadioGroup>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:orientation="horizontal"
-                android:padding="@dimen/padding_small"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp">
-
-                <android.support.v7.widget.SwitchCompat
-                    android:id="@+id/covered_button_control"
-                    android:text="@string/covered_label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:textColor="@color/blueClick"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:orientation="horizontal"
-                android:padding="@dimen/padding_small"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp">
-
-                <android.support.v7.widget.SwitchCompat
-                    android:id="@+id/compact_button_control"
-                    android:text="@string/compact_label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:textColor="@color/blueClick"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:orientation="horizontal"
-                android:padding="@dimen/padding_small"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
-                android:layout_marginBottom="20dp">
-
-                <android.support.v7.widget.SwitchCompat
-                    android:id="@+id/handicap_button_control"
-                    android:text="@string/handicap_label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:textColor="@color/blueClick"/>
-            </LinearLayout>
 
             <include layout="@layout/divider"/>
-
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/upload_parking_button"
-                android:text="@string/upload_parking_image"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:textColor="@color/colorAccent"
-                android:textSize="18sp"
-                android:layout_marginTop="10dp"/>
-
-            <ImageView
-                android:id="@+id/parkingImage"
-                android:layout_width="250dp"
-                android:layout_height="250dp"
-                android:layout_gravity="center_horizontal"
-                android:contentDescription="@string/profile_image_description"
-                android:layout_marginBottom="20dp"/>
 
             <Button
                 android:layout_width="match_parent"

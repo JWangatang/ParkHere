@@ -12,6 +12,7 @@ public class Consts {
     public static final String LISTING_FRAGMENT_TAG = "listing_fragment";
     public static final String BALANCE_FRAGMENT_TAG = "balance_fragment";
     public static final String MY_PROFILE_FRAGMENT_TAG = "my_profile_fragment";
+    public static final String PARKING_SPOTS_FRAGMENT_TAG = "parking_spots_fragment";
 
     public static final String IMAGE_URI = "image_uri";
 
@@ -25,20 +26,31 @@ public class Consts {
     public static final String HANDICAP_EXTRA = "handicap_extra";
     public static final String COMPACT_EXTRA = "compact_extra";
     public static final String LISTING_EDIT_EXTRA = "listing_edit_extra";
+    public static final String PARKING_SPOT_EDIT_EXTRA = "parking_spot_edit_extra";
     public static final String MY_OWN_LISTING_EXTRA = "my_own_listing_extra";
     public static final String BOOKING_EXTRA = "booking_extra";
     public static final String LISTING_EXTRA = "listing_extra";
     public static final String INACTIVE_LISTINGS_EXTRA = "inactive_listings_extra";
+    public static final String SIGN_OUT_EXTRA = "sign_out_extra";
+    public static final String EMAIL_EXTRA = "email_extra";
+    public static final String TEXT_BODY_EXTRA = "text_body_extra";
+    public static final String PARKING_SPOT_EXTRA = "parking_spot_extra";
+    public static final String PRIOR_BOOKING_EXTRA = "prior_booking_extra";
+
 
     public static final String LISTING_TO_BE_BOOKED = "listing_to_be_booked";
     public static final String LISTING_DISTANCE = "listing_distance";
     public static final String LISTING_DETAILS_STRING = "listing_details_string";
 
     public static final String SEARCH_INTENT_FILTER = "search_intent_filter";
+    public static final String EMAIL_INTENT_FILTER = "email_intent_filter";
 
     public static final int FILTERS_CHANGED = 1001;
     public static final int FILTERS_UNCHANGED = 1002;
+    public static final int PARKING_SPOT_REQUEST = 1003;
+    public static final int PARKING_SPOT_SUCCESSFUL_RESULT = 10004;
 
+    public static final String EMAIL_SERVICE = "Email Service";
     public static final String SEARCH_SERVICE = "Search Service";
     public static final String BASE_URL = "http://parkhere-ceccb.appspot.com";
 
@@ -61,6 +73,7 @@ public class Consts {
     public static final String LISTINGS_DATABASE = "Listings";
     public static final String BOOKINGS_DATABASE = "Bookings";
     public static final String REVIEWS_DATABASE = "Reviews";
+    public static final String PARKING_SPOTS_DATABASE = "Parking Spots";
 
     //User Database
     public static final String USER_FIRSTNAME = "First Name";
@@ -92,6 +105,12 @@ public class Consts {
     public static final String LISTING_END_TIME = "End Time";
     public static final String LISTING_IMAGE = "Image URL";
     public static final String LISTING_IS_PAID = "Paid";
+    public static final String LISTING_ACTIVE_TIMES = "Active Times";
+    public static final String LISTING_BOOK_TIME = "Book Time Increment";
+    public static final String LISTING_CURRENT_ACTIVE = "Currently Active";
+
+
+    public static final String DEFAULT_PARKING_IMAGE = "https://firebasestorage.googleapis.com/v0/b/parkhere-ceccb.appspot.com/o/parking_spaces%2Fempty_parking.png?alt=media&token=9f2a1602-9248-4485-8eef-1c73f7a5ea77";
 
     //Booking Database
     public static final String BOOKING_ID = "Booking ID";
@@ -135,5 +154,20 @@ public class Consts {
     public static final String REVIEW_DESCRIPTION = "Review";
     public static final String REVIEW_RATING = "Rating";
 
+    public static final String PARKING_SPOT_DATABASE = "Parking Spots";
+    public static final int RESULTS_LIST_VIEW_ID = 0;
+
+    //Parking
+    public static final String PARKING_SPOTS_ID = "ParkingID";
+    public static final String PARKING_SPOTS_PROVIDER_ID = "ProviderID";
+    public static final String PARKING_SPOTS_COMPACT = "Compact";
+    public static final String PARKING_SPOTS_COVERED = "Covered";
+    public static final String PARKING_SPOTS_HANDICAP = "Handicap";
+    public static final String PARKING_SPOTS_LONGITUDE = "Longitude";
+    public static final String PARKING_SPOTS_LATITUDE = "Latitude";
+    public static final String PARKING_SPOTS_IMAGE = "ImageURL";
+    public static final String PARKING_SPOTS_BOOKING_COUNT = "Booking Count";
+    public static final String PARKING_SPOTS_NAME = "Name";
+    public static final String PARKING_SPOTS_ACTIVE = "Active";
 
 }

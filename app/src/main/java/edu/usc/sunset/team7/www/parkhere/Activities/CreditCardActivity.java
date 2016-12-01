@@ -26,56 +26,33 @@ import edu.usc.sunset.team7.www.parkhere.Utils.Consts;
 
 public class CreditCardActivity extends AppCompatActivity {
 
-    @BindView(R.id.name_textinputlayout)
-    TextInputLayout nameTextInputLayout;
-    @BindView(R.id.creditcard_textinputlayout)
-    TextInputLayout creditCardTextInputLayout;
-    @BindView(R.id.security_textinputlayout)
-    TextInputLayout securityTextInputLayout;
-    @BindView(R.id.address_textinputlayout)
-    TextInputLayout addressTextInputLayout;
-    @BindView(R.id.city_textinputlayout)
-    TextInputLayout cityTextInputLayout;
-    @BindView(R.id.state_textinputlayout)
-    TextInputLayout stateTextInputLayout;
-    @BindView(R.id.zipcode_textinputlayout)
-    TextInputLayout zipCodeTextInputLayout;
+    @BindView(R.id.name_textinputlayout) TextInputLayout nameTextInputLayout;
+    @BindView(R.id.creditcard_textinputlayout) TextInputLayout creditCardTextInputLayout;
+    @BindView(R.id.security_textinputlayout) TextInputLayout securityTextInputLayout;
+    @BindView(R.id.address_textinputlayout) TextInputLayout addressTextInputLayout;
+    @BindView(R.id.city_textinputlayout) TextInputLayout cityTextInputLayout;
+    @BindView(R.id.state_textinputlayout) TextInputLayout stateTextInputLayout;
+    @BindView(R.id.zipcode_textinputlayout) TextInputLayout zipCodeTextInputLayout;
 
-    @BindView(R.id.name_edittext)
-    AppCompatEditText nameEditText;
-    @BindView(R.id.creditcard_edittext)
-    AppCompatEditText creditCardEditText;
-    @BindView(R.id.security_edittext)
-    AppCompatEditText securityEditText;
-    @BindView(R.id.address_edittext)
-    AppCompatEditText addressEditText;
-    @BindView(R.id.city_edittext)
-    AppCompatEditText cityEditText;
-    @BindView(R.id.state_edittext)
-    AppCompatEditText stateEditText;
-    @BindView(R.id.zipcode_edittext)
-    AppCompatEditText zipCodeEditText;
+    @BindView(R.id.name_edittext) AppCompatEditText nameEditText;
+    @BindView(R.id.creditcard_edittext) AppCompatEditText creditCardEditText;
+    @BindView(R.id.security_edittext) AppCompatEditText securityEditText;
+    @BindView(R.id.address_edittext) AppCompatEditText addressEditText;
+    @BindView(R.id.city_edittext) AppCompatEditText cityEditText;
+    @BindView(R.id.state_edittext) AppCompatEditText stateEditText;
+    @BindView(R.id.zipcode_edittext) AppCompatEditText zipCodeEditText;
 
-    @BindView(R.id.confirm_button)
-    Button confirmButton;
+    @BindView(R.id.confirm_button) Button confirmButton;
 
-    @BindView(R.id.myRadioGroup)
-    RadioGroup radioGroup;
-    @BindView(R.id.visa_rButton)
-    RadioButton visa;
-    @BindView(R.id.mastercard_rButton)
-    RadioButton mastercard;
-    @BindView(R.id.american_express_rButton)
-    RadioButton americanExpress;
-    @BindView(R.id.discover_rButton)
-    RadioButton discover;
+    @BindView(R.id.myRadioGroup) RadioGroup radioGroup;
+    @BindView(R.id.visa_rButton) RadioButton visa;
+    @BindView(R.id.mastercard_rButton) RadioButton mastercard;
+    @BindView(R.id.american_express_rButton) RadioButton americanExpress;
+    @BindView(R.id.discover_rButton) RadioButton discover;
 
-    @BindView(R.id.month_np)
-    NumberPicker monthNumberPicker;
+    @BindView(R.id.month_np) NumberPicker monthNumberPicker;
 
-    @BindView(R.id.year_np)
-    NumberPicker yearNumberPicker;
-
+    @BindView(R.id.year_np) NumberPicker yearNumberPicker;
 
     private String name, creditCardNumber, securityCode, month, year, address, city, state, zipcode, creditCardType;
 
@@ -96,9 +73,9 @@ public class CreditCardActivity extends AppCompatActivity {
         creditCardNumber = "";
         securityCode = "";
         address = "";
-        city ="";
-        state="";
-        zipcode="";
+        city = "";
+        state = "";
+        zipcode = "";
 
         creditCardTypes = new Hashtable<Integer, String>();
         creditCardTypes.put(R.id.visa_rButton, Consts.VISA);
@@ -117,7 +94,7 @@ public class CreditCardActivity extends AppCompatActivity {
     @OnClick(R.id.confirm_button)
     protected void confirm() {
         collectValues();
-        if(checkValues()){
+        if(checkValues()) {
 
             Intent i = new Intent(CreditCardActivity.this, TransactionConfirmationActivity.class);
             Bundle b = getIntent().getExtras();
@@ -139,11 +116,6 @@ public class CreditCardActivity extends AppCompatActivity {
         }
     }
 
-    private String creditCardInformation(){
-        String s = "";
-        return s;
-    }
-
     private void collectValues(){
         name = nameEditText.getText().toString();
         creditCardNumber = creditCardEditText.getText().toString();
@@ -154,69 +126,72 @@ public class CreditCardActivity extends AppCompatActivity {
         zipcode = zipCodeEditText.getText().toString();
         creditCardType = creditCardTypes.get(radioGroup.getCheckedRadioButtonId());
 
-        month = ""+monthNumberPicker.getValue();
-        year = ""+yearNumberPicker.getValue();
+        month = "" + monthNumberPicker.getValue();
+        year = "" + yearNumberPicker.getValue();
     }
 
-    private boolean checkValues(){
-        if(radioGroup.getCheckedRadioButtonId() != -1){
-            if(!name.equals("'")){
-                if(checkCreditCard()){
-                    if(checkSecurityCode()){
-                       if(checkExpirationDate()) {
-                           if (checkAddress()) {
-                               if (!city.equals("")) {
-                                   if (!state.equals("")) {
-                                       if (checkZipCode()) {
-                                           return true;
-                                       } else {
-                                           zipCodeTextInputLayout.setErrorEnabled(true);
-                                           zipCodeTextInputLayout.setError("Invalid zip code. Please try again.");
-                                       }
-                                   } else {
-                                       stateTextInputLayout.setErrorEnabled(true);
-                                       stateTextInputLayout.setError("Please enter a state.");
-                                   }
-                               } else {
-                                   cityTextInputLayout.setErrorEnabled(true);
-                                   cityTextInputLayout.setError("Please enter a city.");
-                               }
-                           } else {
-                               addressTextInputLayout.setErrorEnabled(true);
-                               addressTextInputLayout.setError("Invalid address. Please try again.");
-                           }
-                       } else{
-                           Toast.makeText(CreditCardActivity.this, "Please enter an expiration date.",
-                                   Toast.LENGTH_SHORT).show();
-                       }
-                    } else{
-                        securityTextInputLayout.setErrorEnabled(true);
-                        securityTextInputLayout.setError("Invalid security code. Please try again.");
-                    }
-                } else{
-                    creditCardTextInputLayout.setErrorEnabled(true);
-                    creditCardTextInputLayout.setError("Invalid credit card number. Please try again.");
-                }
-            } else{
-                nameTextInputLayout.setErrorEnabled(true);
-                nameTextInputLayout.setError("Please enter your name.");
-            }
-        } else{
+    public boolean checkValues(){
+        boolean isValid = true;
+        if(radioGroup.getCheckedRadioButtonId() == -1){
             Toast.makeText(CreditCardActivity.this, "Please select a credit card type.",
                     Toast.LENGTH_SHORT).show();
+            isValid = false;
         }
-        return false;
+
+        if(name.equals("'")) {
+            nameTextInputLayout.setErrorEnabled(true);
+            nameTextInputLayout.setError("Please enter your name.");
+            isValid = false;
+        }
+        if(!checkCreditCard()) {
+            creditCardTextInputLayout.setErrorEnabled(true);
+            creditCardTextInputLayout.setError("Invalid credit card number. Please try again.");
+            isValid = false;
+        }
+        if(!checkSecurityCode()){
+            securityTextInputLayout.setErrorEnabled(true);
+            securityTextInputLayout.setError("Invalid security code. Please try again.");
+            isValid = false;
+        }
+        if(!checkExpirationDate()) {
+            Toast.makeText(CreditCardActivity.this, "Please enter an expiration date.",
+                    Toast.LENGTH_SHORT).show();
+            isValid = false;
+        }
+        if (!checkAddress()) {
+            addressTextInputLayout.setErrorEnabled(true);
+            addressTextInputLayout.setError("Invalid address. Please try again.");
+            isValid = false;
+        }
+
+        if (city.equals("")) {
+            cityTextInputLayout.setErrorEnabled(true);
+            cityTextInputLayout.setError("Please enter a city.");
+            isValid = false;
+        }
+        if (state.equals("")) {
+            stateTextInputLayout.setErrorEnabled(true);
+            stateTextInputLayout.setError("Please enter a state.");
+            isValid = false;
+        }
+        if (checkZipCode()) {
+            zipCodeTextInputLayout.setErrorEnabled(true);
+            zipCodeTextInputLayout.setError("Invalid zip code. Please try again.");
+            isValid = false;
+        }
+
+        return isValid;
     }
 
-    private boolean checkCreditCard(){
+    private boolean checkCreditCard() {
         return creditCardNumber.length()<19 && creditCardNumber.length()>12 && isLong(creditCardNumber);
     }
 
-    private boolean checkSecurityCode(){
-        return securityCode.length()<5 && securityCode.length()>2 && isLong(securityCode);
+    private boolean checkSecurityCode() {
+        return securityCode.length() < 5 && securityCode.length() > 2 && isLong(securityCode);
     }
 
-    private boolean checkExpirationDate(){
+    private boolean checkExpirationDate() {
         return !month.equals("") && !year.equals("");
     }
 
@@ -225,7 +200,7 @@ public class CreditCardActivity extends AppCompatActivity {
     }
 
     private boolean checkZipCode(){
-        return zipcode.length()!=9 && isLong(zipcode);
+        return zipcode.length()==6 && isLong(zipcode);
     }
 
     private boolean isLong(String s){

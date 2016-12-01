@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Hashtable;
+import java.util.concurrent.Semaphore;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -65,16 +67,6 @@ public class EditListingActivity extends AppCompatActivity {
 
     private String nameString, descriptionString;
     private double price;
-
-    ///Image
-    @BindView(R.id.parking_image) ImageView parkingImageView;
-
-    //Parking Type Buttons
-    @BindView(R.id.handicap_button_control) SwitchCompat handicapSwitch;
-    @BindView(R.id.compact_button_control) SwitchCompat compactSwitch;
-    @BindView(R.id.covered_button_control) SwitchCompat coveredSwitch;
-
-    boolean isCompact, isHandicap, isCovered;
 
     //Cancellation policies
     @BindView(R.id.myRadioGroup) RadioGroup radioGroup;
@@ -119,18 +111,12 @@ public class EditListingActivity extends AppCompatActivity {
     }
 
     //For populating the fields
-    protected void populateFields(Listing getListing) {
+    public void populateFields(Listing getListing) {
         parkingNameEditText.setText(getListing.getName());
         descriptionEditText.setText(getListing.getDescription());
         String origPrice = Double.toString(getListing.getPrice());
         priceEditText.setText(origPrice);
-        handicapSwitch.setChecked(getListing.isHandicap());
-        compactSwitch.setChecked(getListing.isCompact());
-        coveredSwitch.setChecked(getListing.isCovered());
         listingId = getListing.getListingID();
-        sourceImageUri = null;
-        URL url = null;
-        Picasso.with(this).load(getListing.getImageURL()).into(parkingImageView);
 
         boolean isRefundable = getListing.isRefundable();
         if(isRefundable){
@@ -147,21 +133,71 @@ public class EditListingActivity extends AppCompatActivity {
     @OnClick(R.id.upload_listing_button)
     protected void submitListing() {
         if(checkFields()) {
-            mDatabase = FirebaseDatabase.getInstance().getReference();
+            int radioButtonID = radioGroup.getCheckedRadioButtonId();
+            new UpdateListingTask().execute(radioButtonID);
+        }
+    }
+
+    public boolean checkFields() {
+        nameString = parkingNameEditText.getText().toString();
+        descriptionString = descriptionEditText.getText().toString();
+        //possible invalid number format here
+        String checkPrice = priceEditText.getText().toString();
+        if(checkPrice.length() > 0) {
+            price = Double.parseDouble(priceEditText.getText().toString());
+        } else {
+            price = -1;
+        }
+            //return false;
+        boolean isValid = true;
+        if(nameString.isEmpty()) {
+            isValid = false;
+            parkingNameTextInputLayout.setErrorEnabled(true);
+            System.out.println("NAME FAIL");
+            parkingNameTextInputLayout.setError("Please enter a name.");
+        }
+        if (descriptionString.isEmpty()) {
+            isValid = false;
+            descriptionTextInputLayout.setErrorEnabled(true);
+            System.out.println("DESCRIPTION FAIL");
+            descriptionTextInputLayout.setError("Please enter a description.");
+        }
+        if (price < 0) {
+            isValid = false;
+            priceTextInputLayout.setErrorEnabled(true);
+            System.out.println("PRICE FAIL");
+            priceTextInputLayout.setError("Please enter a price greater than $0");
+        }
+        if (radioGroup.getCheckedRadioButtonId() == -1) {
+            isValid = false;
+            System.out.println("RADIO BUTTON FAIL");
+            Toast.makeText(EditListingActivity.this, "Please select a cancellation policy.",
+                    Toast.LENGTH_SHORT).show();
+        }
+        return isValid;
+    }
+
+    private class UpdateListingTask extends AsyncTask<Integer, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Integer... radioButton) {
+
+            System.out.println("ASYNC TASK IS CALLED");
+
+            final Semaphore semaphore = new Semaphore(0);
+
+            DatabaseReference mDatabase1 = FirebaseDatabase.getInstance().getReference();
             String uid = currentUser.getUid();
 
             Log.i("TESTING****", "LISTING ID: " + editListing.getListingID());
 
-            DatabaseReference nameRef = mDatabase.child(Consts.LISTINGS_DATABASE).child(uid).child(Consts.ACTIVE_LISTINGS).child(editListing.getListingID());
+            DatabaseReference nameRef = mDatabase1.child(Consts.LISTINGS_DATABASE).child(uid).child(Consts.ACTIVE_LISTINGS).child(editListing.getListingID());
             nameRef.child(Consts.LISTING_DESCRIPTION).setValue(descriptionString);
             nameRef.child(Consts.LISTING_PRICE).setValue(price);
 
-            nameRef.child(Consts.LISTING_HANDICAP).setValue(isHandicap);
-            nameRef.child(Consts.LISTING_COMPACT).setValue(isCompact);
-            nameRef.child(Consts.LISTING_COVERED).setValue(isCovered);
             nameRef.child(Consts.LISTING_NAME).setValue(nameString);
-            nameRef.child(Consts.LISTING_REFUNDABLE).setValue(cancellationIds.get(radioGroup.getCheckedRadioButtonId()));
-
+            nameRef.child(Consts.LISTING_REFUNDABLE).setValue(cancellationIds.get(radioButton[0]));
+            semaphore.release();
 
             if (sourceImageUri != null) {
                 //Need image url
@@ -188,63 +224,20 @@ public class EditListingActivity extends AppCompatActivity {
                 nameRef.child(Consts.LISTING_IMAGE).setValue(editListing.getImageURL());
             }
 
-            HomeActivity.startActivityForListing(this);
-            finish();
-        }
-    }
-
-    @OnClick(R.id.upload_parking_button)
-    protected void uploadImage() {
-        Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(galleryIntent, 1);
-    }
-
-    //Method called when user selects a picture
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        //Make sure the gallery Intent called this method
-        if(requestCode==1 && resultCode==RESULT_OK && data!=null ){
-            sourceImageUri = data.getData();
-            parkingImageView.setImageURI(sourceImageUri);
-        }
-    }
-
-
-    private boolean checkFields() {
-        nameString = parkingNameEditText.getText().toString();
-        descriptionString =descriptionEditText.getText().toString();
-        //possible invalid number format here
-        price = Double.parseDouble(priceEditText.getText().toString());
-
-        if(!nameString.equals("")){
-            if(!descriptionString.equals("")) {
-                if(price>=0){
-                    if (radioGroup.getCheckedRadioButtonId() != -1) {
-                        saveSwitchValues();
-                        return true;
-                    } else {
-                        Toast.makeText(EditListingActivity.this, "Please select a cancellation policy.",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    priceTextInputLayout.setErrorEnabled(true);
-                    priceTextInputLayout.setError("Please enter a price greater than $0");
-                }
-            } else {
-                descriptionTextInputLayout.setErrorEnabled(true);
-                descriptionTextInputLayout.setError("Please enter a description.");
+            try {
+                semaphore.acquire();
+                System.out.println("FINISHED UPDATING IN DATABASE");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } else {
-            parkingNameTextInputLayout.setErrorEnabled(true);
-            parkingNameTextInputLayout.setError("Please enter a name.");
-        }
-        return false;
-    }
 
-    private void saveSwitchValues(){
-        isCompact = compactSwitch.isChecked();
-        isCovered = coveredSwitch.isChecked();
-        isHandicap =  handicapSwitch.isChecked();
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            HomeActivity.startActivityForListing(EditListingActivity.this);
+            EditListingActivity.this.finish();
+        }
     }
 }

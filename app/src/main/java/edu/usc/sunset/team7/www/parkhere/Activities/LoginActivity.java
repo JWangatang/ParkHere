@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
@@ -23,6 +24,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import java.util.concurrent.Semaphore;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -53,13 +56,6 @@ public class LoginActivity extends AppCompatActivity {
         context.startActivity(i);
     }
 
-    //Firebase AuthListener checks for changes to the Auth (when the user logs in and out)
-    @Override
-    public void onStart() {
-        super.onStart();
-        mAuth.addAuthStateListener(mAuthListener);
-    }
-
     @Override
     public void onStop() {
         super.onStop();
@@ -68,6 +64,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
@@ -75,6 +72,10 @@ public class LoginActivity extends AppCompatActivity {
 
         //Firebase setup
         mAuth = FirebaseAuth.getInstance();
+
+        if (getIntent().getBooleanExtra(Consts.SIGN_OUT_EXTRA, false) && mAuth.getCurrentUser() != null) {
+            mAuth.signOut();
+        }
 
         mAuthListener = new FirebaseAuth.AuthStateListener() {
             @Override
@@ -86,7 +87,8 @@ public class LoginActivity extends AppCompatActivity {
 
                     checkIsProvider(user);
                     if(isProvider) {
-                        //start my listings activity
+                        HomeActivity.startActivityForListing(LoginActivity.this);
+                        finish();
                     } else {
                         HomeActivity.startActivityForSearch(LoginActivity.this);
                         finish();
@@ -117,11 +119,12 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         };
+        mAuth.addAuthStateListener(mAuthListener);
 
     }
 
     @OnClick (R.id.login_button)
-    protected void attemptLogin() {
+    public void attemptLogin() {
         String email = emailEditText.getText().toString();
         String password = passwordEditText.getText().toString();
 
@@ -129,28 +132,51 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
         //Firebase sign in code
-        mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        Log.d(TAG, "signInWithEmail:onComplete:" + task.isSuccessful());
+        new LoginTask().execute(email, password);
+    }
 
-                        // If sign in fails, display a message to the user. If sign in succeeds
-                        // the auth state listener will be notified and logic to handle the
-                        // signed in user can be handled in the listener.
-                        if (!task.isSuccessful()) {
-                            Log.w(TAG, "signInWithEmail:failed", task.getException());
-                            Toast.makeText(LoginActivity.this, "Incorrect email or password. Please try again.",
-                                    Toast.LENGTH_SHORT).show();
+    private class LoginTask extends AsyncTask<String, Void, Void> {
+
+        @Override
+        protected Void doInBackground(String... params) {
+
+            final Semaphore mSemaphore = new Semaphore(0);
+            mAuth.signInWithEmailAndPassword(params[0], params[1])
+                    .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            Log.d(TAG, "signInWithEmail:onComplete:" + task.isSuccessful());
+
+                            // If sign in fails, display a message to the user. If sign in succeeds
+                            // the auth state listener will be notified and logic to handle the
+                            // signed in user can be handled in the listener.
+                            if (!task.isSuccessful()) {
+                                Log.w(TAG, "signInWithEmail:failed", task.getException());
+                                Toast.makeText(LoginActivity.this, "Incorrect email or password. Please try again.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                            mSemaphore.release();
+
                         }
+                    });
+            try {
+                mSemaphore.acquire();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-                    }
-                });
+            return null;
+        }
+    }
+
+    public FirebaseUser getCurrentUser() {
+        return FirebaseAuth.getInstance().getCurrentUser();
     }
 
     @OnClick (R.id.register_button)
     protected void moveToRegister() {
         RegisterActivity.startActivity(this);
+        finish();
     }
 
     @OnClick (R.id.forgot_password_button)
